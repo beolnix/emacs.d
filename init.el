@@ -31,8 +31,9 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("028b95ddc74a4cda16b51b04baf4007ac07a8728d5bfa58c0e738182aa7ce491" default))
+ '(lsp-ui-doc-enable nil)
  '(package-selected-packages
-   '(magit git json-mode lsp-clangd lsp-ui lsp-rust company-lsp flycheck-rust cargo projectile company-c-headers company ggtags))
+   '(racer magit git json-mode lsp-clangd lsp-ui lsp-rust company-lsp flycheck-rust cargo projectile company-c-headers company ggtags))
  '(projectile-keymap-prefix "C-c C-p"))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -61,26 +62,33 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; navigation
-;(require 'ggtags)
-;(add-hook 'c-mode-common-hook
-;          (lambda ()
-;            (when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
-;              (ggtags-mode 1))))
-;
-;(define-key ggtags-mode-map (kbd "C-c g s") 'ggtags-find-other-symbol)
-;(define-key ggtags-mode-map (kbd "C-c g h") 'ggtags-view-tag-history)
-;(define-key ggtags-mode-map (kbd "C-c g r") 'ggtags-find-reference)
-;(define-key ggtags-mode-map (kbd "C-c g f") 'ggtags-find-file)
-;(define-key ggtags-mode-map (kbd "C-c g c") 'ggtags-create-tags)
-;(define-key ggtags-mode-map (kbd "C-c g u") 'ggtags-update-tags)
-;
-;(define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
+(require 'ggtags)
+(add-hook 'c-mode-common-hook
+         (lambda ()
+           (when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
+             (ggtags-mode 1))))
+
+(define-key ggtags-mode-map (kbd "C-c g s") 'ggtags-find-other-symbol)
+(define-key ggtags-mode-map (kbd "C-c g h") 'ggtags-view-tag-history)
+(define-key ggtags-mode-map (kbd "C-c g r") 'ggtags-find-reference)
+(define-key ggtags-mode-map (kbd "C-c g f") 'ggtags-find-file)
+(define-key ggtags-mode-map (kbd "C-c g c") 'ggtags-create-tags)
+(define-key ggtags-mode-map (kbd "C-c g u") 'ggtags-update-tags)
+
+(define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto completion
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
 (setq company-backends (delete 'company-semantic company-backends))
+
+
+
+;(require 'company-racer)
+;(with-eval-after-load 'company
+;  (add-to-list 'company-backends 'company-racer))
+
 
 ;; TODO: uncomment this to add includes for c/c++
 ;; ((nil . ((company-clang-arguments . ("-I/home/<user>/project_root/include1/"
@@ -117,17 +125,36 @@
 (with-eval-after-load 'rust-mode
       (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
 
+;; display issues of the fly check
 (setq rust-format-on-save t)
 (require 'lsp-ui)
 (add-hook 'lsp-mode-hook 'lsp-ui-mode)
 (add-hook 'XXXXX-mode-hook 'flycheck-mode)
 
+;; fly check
 (with-eval-after-load 'lsp-mode
   (setq lsp-rust-rls-command '("rustup" "run" "nightly" "rls"))
   (require 'lsp-rust))
 (add-hook 'rust-mode-hook #'lsp-rust-enable)
 (add-hook 'rust-mode-hook #'flycheck-mode)
 
+;; auto-completion
+(setq racer-cmd "~/.cargo/bin/racer") ;; Rustup binaries PATH
+(setq racer-rust-src-path "/Users/dan.atmakin/dev/thirdparty/rust/src") ;; Rust source code PATH
+
+(add-hook 'rust-mode-hook #'racer-mode)
+;;(add-hook 'racer-mode-hook #'eldoc-mode)
+(add-hook 'racer-mode-hook #'company-mode)
+
+(add-hook 'rust-mode-hook
+  (lambda ()
+    (local-set-key (kbd "C-c <tab>") #'rust-format-buffer)))
+
+(add-hook
+ 'rust-mode-hook
+ (lambda ()
+   (racer-mode)
+   (setq-local eldoc-documentation-function #'ignore)))  ;; <-- override eldoc function!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; clang
 (require 'cc-mode)
@@ -140,3 +167,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; clang
 (require 'git)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bindings
+
+(global-set-key (kbd "C-c i") 'company-complete)
+
